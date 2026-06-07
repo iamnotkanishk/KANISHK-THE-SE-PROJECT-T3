@@ -1,19 +1,19 @@
 const authTokenKey = 'stagepassAuthToken';
 
-function getMessageContainer(id) {
-    return document.getElementById(id);
+function getMessageContainer(id) { // Helper to get message container elements
+    return document.getElementById(id); 
 }
 
-function showMessage(message, type = 'error') {
+function showMessage(message, type = 'error') { // type can be 'error' or 'success'
     const errorEl = getMessageContainer('errorMessage');
     const successEl = getMessageContainer('successMessage');
 
-    if (errorEl) {
+    if (errorEl) { // Show error message if type is 'error'
         errorEl.textContent = type === 'error' ? message : '';
         errorEl.style.display = type === 'error' && message ? 'block' : 'none';
     }
 
-    if (successEl) {
+    if (successEl) { // Show success message if type is 'success'
         successEl.textContent = type === 'success' ? message : '';
         successEl.style.display = type === 'success' && message ? 'block' : 'none';
     }
@@ -24,14 +24,14 @@ function clearMessages() {
     showMessage('', 'success');
 }
 
-function validateLoginFields({ username, password }) {
+function validateLoginFields({ username, password }) { // Validate login form fields
     if (!username || !password) {
         return 'Please enter both username and password.';
     }
     return null;
 }
 
-function validateSignupFields({ username, password, confirmPassword }) {
+function validateSignupFields({ username, password, confirmPassword }) { // Validate signup form fields
     if (!username || !password || !confirmPassword) {
         return 'Please complete every field.';
     }
@@ -44,29 +44,29 @@ function validateSignupFields({ username, password, confirmPassword }) {
     return null;
 }
 
-async function postJson(url, data) {
+async function postJson(url, data) { // Helper function to send POST requests with JSON body
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     });
-    const payload = await response.json().catch(() => ({}));
+    const payload = await response.json().catch(() => ({})); // Attempt to parse JSON response, fallback to empty object on failure
     return { ok: response.ok, status: response.status, payload };
 }
 
-async function handleLogin(event) {
+async function handleLogin(event) { // Handle login form submission
     event.preventDefault();
     clearMessages();
 
     const username = document.getElementById('username')?.value.trim();
     const password = document.getElementById('password')?.value;
-    const error = validateLoginFields({ username, password });
+    const error = validateLoginFields({ username, password }); // Validate login fields
     if (error) {
         showMessage(error, 'error');
         return;
     }
 
-    const { ok, payload } = await postJson('/login', { username, password });
+    const { ok, payload } = await postJson('/login', { username, password }); // Send login request to server
     if (!ok) {
         showMessage(payload.message || 'Login failed. Please try again.', 'error');
         return;
@@ -79,7 +79,7 @@ async function handleLogin(event) {
     window.location.href = 'index.html';
 }
 
-async function handleSignup(event) {
+async function handleSignup(event) { // Handle signup form submission
     event.preventDefault();
     clearMessages();
 
@@ -92,25 +92,25 @@ async function handleSignup(event) {
         return;
     }
 
-    const { ok, payload } = await postJson('/signup', { username, password });
+    const { ok, payload } = await postJson('/signup', { username, password }); // Send signup request to server
     if (!ok) {
         showMessage(payload.message || 'Sign up failed. Please try again.', 'error');
         return;
     }
 
-    showMessage('Account created. Redirecting to login...', 'success');
+    showMessage('Account created. Redirecting to login...', 'success'); // Show success message on successful signup
     setTimeout(() => {
         window.location.href = 'login.html';
     }, 1200);
 }
 
 function attachFormHandlers() {
-    const loginForm = document.getElementById('loginForm');
+    const loginForm = document.getElementById('loginForm'); // Attach event listener to login form if it exists
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
     }
 
-    const signupForm = document.getElementById('signupForm');
+    const signupForm = document.getElementById('signupForm'); // Attach event listener to signup form if it exists
     if (signupForm) {
         signupForm.addEventListener('submit', handleSignup);
     }
