@@ -6,10 +6,13 @@
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": ["pwa"],
+  "keywords": [
+    "pwa"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "express": "^5.1.0",
     "sqlite3": "^5.1.7"
   }

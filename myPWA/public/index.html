@@ -15,6 +15,9 @@
 
   <script src="js/app.js" defer></script>
   <script>
+    if (window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
+      window.location.replace('login.html');
+    }
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('serviceWorker.js');
     }

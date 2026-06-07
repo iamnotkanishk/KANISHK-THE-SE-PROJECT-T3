@@ -1,5 +1,7 @@
 const express = require('express');
+const bcrypt = require('bcrypt'); // For password hashing
 const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 const path = require('path');
 
 const router = express.Router();
@@ -9,6 +11,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.error('Failed to open SQLite database:', err);
   }
 });
+
+const saltRounds = 10; // Number of salt rounds for bcrypt hashing
 
 db.serialize(() => { // Create users table if it doesn't exist
   db.run(
@@ -22,14 +26,25 @@ db.serialize(() => { // Create users table if it doesn't exist
   );
 });
 
+function logError(err) {
+  const logMessage = `[${new Date().toISOString()}] ${err?.stack || err?.message || String(err)}\n`;
+  try {
+    fs.appendFileSync(path.join(__dirname, 'server-error.log'), logMessage);
+  } catch (writeErr) {
+    console.error('Failed to write error log:', writeErr);
+  }
+}
+
 function sendServerError(res, err) { // Helper function to send a 500 Internal Server Error response
-  console.error(err);
-  return res.status(500).json({ message: 'Internal server error' });
+  console.error('Internal server error:', err);
+  logError(err);
+  return res.status(500).json({ message: err?.message || 'Internal server error' });
 }
 
 router.use(express.json());
 
 router.post('/signup', (req, res) => { // Handle user signup
+  console.log('Signup request body:', req.body);
   const { username, password } = req.body || {};
   if (!username || !password) {
     return res.status(400).json({ message: 'Username and password are required.' });
@@ -41,21 +56,25 @@ router.post('/signup', (req, res) => { // Handle user signup
       return res.status(409).json({ message: 'Username already exists.' });
     }
 
-    db.run(
-      'INSERT INTO users (username, password) VALUES (?, ?)', // Insert new user into database
-      [username, password],
-      function (insertErr) {
-        if (insertErr) return sendServerError(res, insertErr);
-        return res.status(201).json({ message: 'User registered successfully.' });
-      }
-    );
+    bcrypt.hash(password, saltRounds, (hashErr, hashedPassword) => { // Hash the password before storing it in the database
+      if (hashErr) return sendServerError(res, hashErr); // Hashing error
+
+      db.run(
+        'INSERT INTO users (username, password) VALUES (?, ?)', // Insert new user into database
+        [username, hashedPassword],
+        function (insertErr) { 
+          if (insertErr) return sendServerError(res, insertErr);
+          return res.status(201).json({ message: 'User registered successfully.' });
+        }
+      );
+    });
   });
 });
 
 router.post('/login', (req, res) => { // Handle user login
   const { username, password } = req.body || {};
   if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password are required.' }); 
+    return res.status(400).json({ message: 'Username and password are required.' });
   }
 
   db.get(
@@ -63,11 +82,18 @@ router.post('/login', (req, res) => { // Handle user login
     [username],
     (err, user) => {
       if (err) return sendServerError(res, err);
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: 'Invalid username or password.' }); // Return 401 Unauthorized if credentials are invalid
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid username or password.' });
       }
 
-      return res.json({ message: 'Login successful.' });
+      bcrypt.compare(password, user.password, (compareErr, matched) => { // Compare provided password with hashed password in database
+        if (compareErr) return sendServerError(res, compareErr);
+        if (!matched) {
+          return res.status(401).json({ message: 'Invalid username or password.' }); // Return 401 Unauthorized if password does not match
+        }
+
+        return res.json({ message: 'Login successful.' }); // Return success message on successful login (token generation can be added here in the future)
+      });
     }
   );
 });
