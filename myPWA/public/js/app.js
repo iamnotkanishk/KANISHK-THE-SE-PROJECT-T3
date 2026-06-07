@@ -1,7 +1,41 @@
-const authTokenKey = 'stagepassAuthToken';
+const authTokenKey = 'stagepassJwtToken';
+const authUserKey = 'stagepassUser';
 
 function getMessageContainer(id) { // Helper to get message container elements
     return document.getElementById(id); 
+}
+
+function getStoredToken() { // Retrieve stored JWT token from localStorage
+    return localStorage.getItem(authTokenKey);
+}
+
+function getStoredUser() { // Retrieve stored user information from localStorage
+    const raw = localStorage.getItem(authUserKey);
+    if (!raw) return null;
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+}
+
+function setAuth(token, user) { // Store JWT token and user information in localStorage
+    if (token) {
+        localStorage.setItem(authTokenKey, token);
+    }
+    if (user) {
+        localStorage.setItem(authUserKey, JSON.stringify(user));
+    }
+}
+
+function clearAuth() { // Clear authentication data from localStorage
+    localStorage.removeItem(authTokenKey);
+    localStorage.removeItem(authUserKey);
+}
+
+function authHeaders() { // Helper to get authorization headers for authenticated requests
+    const token = getStoredToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 function showMessage(message, type = 'error') { // type can be 'error' or 'success'
@@ -72,12 +106,15 @@ async function handleLogin(event) { // Handle login form submission
         return;
     }
 
-    // Store user data in localStorage
-    if (payload.user) {
-        localStorage.setItem(authTokenKey, JSON.stringify(payload.user));
+    if (payload.token && payload.user) { // Store token and user info on successful login
+        setAuth(payload.token, payload.user);
     }
 
-    // Redirect to home page
+    if (payload.user?.role === 'admin') { // Redirect admin users to admin page
+        window.location.href = 'admin.html';
+        return;
+    }
+
     window.location.href = 'index.html';
 }
 

@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt'); // For password hashing
+const jwt = require('jsonwebtoken');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
@@ -13,6 +14,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 const saltRounds = 10; // Number of salt rounds for bcrypt hashing
+const JWT_SECRET = process.env.JWT_SECRET || 'stagepass_jwt_secret';
+const JWT_EXPIRES_IN = '2h';
 
 db.serialize(() => { // Create users table if it doesn't exist
   db.run(
@@ -53,6 +56,47 @@ function sendServerError(res, err) { // Helper function to send a 500 Internal S
   console.error('Internal server error:', err);
   logError(err);
   return res.status(500).json({ message: err?.message || 'Internal server error' });
+}
+
+function generateToken(user) { // Generate JWT token for authenticated user
+  return jwt.sign(
+    { id: user.id, username: user.username, role: user.role },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
+}
+
+function getTokenFromHeader(req) { // Extract JWT token from Authorization header
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith('Bearer ')) return null;
+  return authHeader.split(' ')[1];
+}
+
+function requireAuth(req, res, next) { // Middleware to require authentication for protected routes
+  const token = getTokenFromHeader(req);
+  if (!token) {
+    return res.status(401).json({ message: 'Authentication required.' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => { // Verify the token and extract user information
+    if (err) {
+      return res.status(401).json({ message: 'Invalid or expired token.' });
+    }
+    req.user = decoded;
+    next();
+  });
+}
+
+function requireRole(...allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required.' });
+    }
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Access denied.' });
+    }
+    next();
+  };
 }
 
 router.use(express.json());
@@ -106,8 +150,10 @@ router.post('/login', (req, res) => { // Handle user login
           return res.status(401).json({ message: 'Invalid username or password.' }); // Return 401 Unauthorized if password does not match
         }
 
+        const token = generateToken(user);
         return res.json({ 
           message: 'Login successful.',
+          token,
           user: { id: user.id, username: user.username, role: user.role }
         });
       });
@@ -120,6 +166,14 @@ router.get('/events', (req, res) => { // Get all events
     if (err) return sendServerError(res, err);
     return res.json({ events: rows || [] });
   });
+});
+
+router.get('/me', requireAuth, (req, res) => { // Get current authenticated user info
+  return res.json({ user: req.user });
+});
+
+router.get('/admin/status', requireAuth, requireRole('admin'), (req, res) => { // Example admin-only route to check admin status
+  return res.json({ message: 'Admin access granted.', user: req.user });
 });
 
 module.exports = router;
