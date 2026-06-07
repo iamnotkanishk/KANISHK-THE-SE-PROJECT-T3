@@ -72,10 +72,12 @@ async function handleLogin(event) { // Handle login form submission
         return;
     }
 
-    if (payload.token) {
-        localStorage.setItem(authTokenKey, payload.token);
+    // Store user data in localStorage
+    if (payload.user) {
+        localStorage.setItem(authTokenKey, JSON.stringify(payload.user));
     }
 
+    // Redirect to home page
     window.location.href = 'index.html';
 }
 
@@ -102,6 +104,44 @@ async function handleSignup(event) { // Handle signup form submission
     setTimeout(() => {
         window.location.href = 'login.html';
     }, 1200);
+}
+
+async function loadEvents() { // Load events from server and display them
+    try {
+        const response = await fetch('/events');
+        const data = await response.json();
+        const events = data.events || [];
+        
+        const container = document.getElementById('eventsContainer'); // Get the container element for displaying events
+        if (!container) return; 
+        
+        if (events.length === 0) {
+            container.innerHTML = '<div class="no-events">No events available</div>';
+            return;
+        }
+        
+        // Render event cards with basic info and a button to view details
+        container.innerHTML = events.map(event => `
+            <div class="event-card">
+                <div class="event-info">
+                    <h3>${event.title || 'Untitled Event'}</h3>
+                    <p class="event-location"><strong>Location:</strong> ${event.location || 'TBA'}</p> 
+                    <p class="event-date"><strong>Date:</strong> ${event.date || 'TBA'}</p>
+                </div>
+                <button class="find-tickets-btn" onclick="viewEvent(${event.id})">Find Tickets</button>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load events:', error); // Log error to console for debugging
+        const container = document.getElementById('eventsContainer');
+        if (container) {
+            container.innerHTML = '<div class="error">Failed to load events</div>';
+        }
+    }
+}
+
+function viewEvent(eventId) { // Navigate to event detail page (to be implemented)
+    window.location.href = `event-detail.html?id=${eventId}`;
 }
 
 function attachFormHandlers() {

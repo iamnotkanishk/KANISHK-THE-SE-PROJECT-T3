@@ -24,6 +24,20 @@ db.serialize(() => { // Create users table if it doesn't exist
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )`
   );
+
+  db.run( // Create events table if it doesn't exist
+    `CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      location TEXT NOT NULL,
+      date TEXT NOT NULL,
+      time TEXT,
+      description TEXT,
+      created_by INTEGER,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    )`
+  );
 });
 
 function logError(err) {
@@ -92,10 +106,20 @@ router.post('/login', (req, res) => { // Handle user login
           return res.status(401).json({ message: 'Invalid username or password.' }); // Return 401 Unauthorized if password does not match
         }
 
-        return res.json({ message: 'Login successful.' }); // Return success message on successful login (token generation can be added here in the future)
+        return res.json({ 
+          message: 'Login successful.',
+          user: { id: user.id, username: user.username, role: user.role }
+        });
       });
     }
   );
+});
+
+router.get('/events', (req, res) => { // Get all events
+  db.all('SELECT id, title, location, date, time, description FROM events ORDER BY date ASC', (err, rows) => {
+    if (err) return sendServerError(res, err);
+    return res.json({ events: rows || [] });
+  });
 });
 
 module.exports = router;
