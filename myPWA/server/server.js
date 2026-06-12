@@ -87,7 +87,7 @@ function requireAuth(req, res, next) { // Middleware to require authentication f
   });
 }
 
-function requireRole(...allowedRoles) {
+function requireRole(...allowedRoles) { // Middleware to require specific user roles for access control
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required.' });
@@ -166,6 +166,21 @@ router.get('/events', (req, res) => { // Get all events
     if (err) return sendServerError(res, err);
     return res.json({ events: rows || [] });
   });
+});
+
+router.get('/events/:id', (req, res) => { // Get a single event by ID
+  const eventId = req.params.id;
+  db.get(
+    'SELECT id, title, location, date, time, description FROM events WHERE id = ?',
+    [eventId],
+    (err, row) => {
+      if (err) return sendServerError(res, err);
+      if (!row) {
+        return res.status(404).json({ message: 'Event not found.' });
+      }
+      return res.json({ event: row });
+    }
+  );
 });
 
 router.get('/me', requireAuth, (req, res) => { // Get current authenticated user info

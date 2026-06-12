@@ -177,8 +177,133 @@ async function loadEvents() { // Load events from server and display them
     }
 }
 
-function viewEvent(eventId) { // Navigate to event detail page (to be implemented)
-    window.location.href = `event-detail.html?id=${eventId}`;
+function viewEvent(eventId) { // Navigate to event detail page for selected event
+    window.location.href = `eventinfo.html?id=${eventId}`;
+}
+
+function getQueryParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+}
+
+async function loadEventDetails() { // Load details for a specific event based on query parameter
+    const eventId = getQueryParam('id');
+    if (!eventId) {
+        const summary = document.getElementById('eventSummary');
+        if (summary) {
+            summary.innerHTML = '<p class="error">No event selected. Go back and choose an event.</p>';
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch(`/events/${encodeURIComponent(eventId)}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to load event details.');
+        }
+
+        const data = await response.json();
+        const event = data.event;
+        if (!event) {
+            throw new Error('Event data is missing from the server response.');
+        }
+
+        document.getElementById('eventDate').textContent = event.date ? `Date: ${event.date}${event.time ? ` · ${event.time}` : ''}` : '';
+        document.getElementById('eventLocation').textContent = event.location ? `Location: ${event.location}` : '';
+        document.getElementById('eventTitleSeating').textContent = event.title ? `${event.title} Seating` : 'Event Seating';
+
+        const seatMap = document.getElementById('seatMap');
+        if (seatMap) {
+            seatMap.innerHTML = '<div class="seat-map-header"><span>Screen</span></div><div class="seat-grid" id="seatGrid"></div><div class="seat-legend"><span class="seat available"></span> Available <span class="seat selected"></span> Selected</div>';
+            renderSeatMap();
+        }
+    } catch (error) {
+        console.error('Could not load event details:', error);
+        const summary = document.getElementById('eventSummary');
+        if (summary) {
+            summary.innerHTML = `<p class="error">${error.message}</p>`;
+        }
+    }
+}
+
+const seatRows = ['A', 'B', 'C', 'D'];
+const seatsPerRow = 15;
+let selectedSeats = [];
+
+function formatSeatLabel(row, seatNumber) { //  Helper function to format seat labels, e.g., "A5" for Row A Seat 5
+    return `${row}${seatNumber}`;
+}
+
+function updateBookingList() { // Update the list of selected seats and the ticket count display
+    const selectedList = document.getElementById('selectedSeats');
+    const ticketCount = document.getElementById('ticketCount');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+
+    if (!selectedList || !ticketCount || !checkoutBtn) return;
+
+    selectedList.innerHTML = '';
+    if (selectedSeats.length === 0) { // Show placeholder text when no seats are selected
+        selectedList.innerHTML = '<li class="empty">No seats selected</li>';
+        checkoutBtn.disabled = true;
+    } else {
+        selectedSeats.forEach(({ row, seat }) => { // Create list items for each selected seat and enable the checkout button
+            const li = document.createElement('li');
+            li.textContent = `Row ${row}, Seat ${seat}`;
+            selectedList.appendChild(li);
+        });
+        checkoutBtn.disabled = false; 
+    }
+
+    ticketCount.textContent = selectedSeats.length;
+}
+
+function handleSeatClick(event) { // Handle click events on seat buttons to toggle selection and update the booking list accordingly
+    const button = event.currentTarget;
+    const row = button.dataset.row;
+    const seat = Number(button.dataset.seat);
+    if (!row || !seat) return;
+
+    const index = selectedSeats.findIndex(item => item.row === row && item.seat === seat);
+    if (index >= 0) { // If the seat is already selected, remove it from the selection and update the button style
+        selectedSeats.splice(index, 1);
+        button.classList.remove('selected');
+    } else { // If the seat is not selected, add it to the selection and update the button style
+        selectedSeats.push({ row, seat });
+        button.classList.add('selected');
+    }
+    updateBookingList();
+}
+
+function renderSeatMap() { // Render the seat map based on defined rows and seats per row, and attach click handlers for seat selection
+    const seatGrid = document.getElementById('seatGrid');
+    if (!seatGrid) return;
+
+    seatGrid.innerHTML = '';  
+    seatRows.forEach(row => {  //
+        const rowContainer = document.createElement('div'); // Create a container for each row of seats
+        rowContainer.className = 'seat-row';
+
+        const rowLabel = document.createElement('div'); // Create a label for the row (e.g., "Row A") and add it to the row container
+        rowLabel.className = 'row-label';
+        rowLabel.textContent = row;
+        rowContainer.appendChild(rowLabel);
+
+        for (let seat = 1; seat <= seatsPerRow; seat += 1) { // Create a button for each seat and attach click handler to toggle selection
+            const seatButton = document.createElement('button');
+            seatButton.type = 'button';
+            seatButton.className = 'seat available';
+            seatButton.dataset.row = row;
+            seatButton.dataset.seat = String(seat);
+            seatButton.textContent = seat;
+            seatButton.addEventListener('click', handleSeatClick);
+            rowContainer.appendChild(seatButton);
+        }
+
+        seatGrid.appendChild(rowContainer);
+    });
+
+    updateBookingList();
 }
 
 function attachFormHandlers() {
@@ -193,4 +318,8 @@ function attachFormHandlers() {
     }
 }
 
-window.addEventListener('DOMContentLoaded', attachFormHandlers);
+window.addEventListener('DOMContentLoaded', () => {
+    attachFormHandlers();
+    loadEventDetails();
+    renderSeatMap();
+});
