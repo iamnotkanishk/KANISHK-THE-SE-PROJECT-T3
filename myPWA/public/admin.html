@@ -17,20 +17,136 @@
     </div>
   </header>
 
-  <main>
+  <main class="event-main">
     <section class="admin-panel">
       <div class="admin-card">
         <h2>Welcome, admin</h2>
         <p>Use this panel to manage events and users. Only accounts with the <strong>admin</strong> role can access this page.</p>
       </div>
       <div class="admin-actions">
-        <button id="viewEventsBtn" class="find-tickets-btn">View Events</button>
+        <button id="refreshEventsBtn" class="find-tickets-btn">Refresh events</button>
+        <div id="adminMessage" class="error" style="display:none; max-width: 480px; margin-left: auto; margin-bottom: 0; text-align: right;"></div>
       </div>
+
+      <div class="admin-grid">
+        <div class="admin-card admin-create-card">
+          <h3>Create Event</h3>
+          <form id="createEventForm">
+            <div class="admin-field">
+              <label for="eventTitle">Title</label>
+              <input id="eventTitle" type="text" required />
+            </div>
+            <div class="admin-field">
+              <label for="eventLocation">Location</label>
+              <input id="eventLocation" type="text" required />
+            </div>
+            <div class="admin-field">
+              <label for="eventDate">Date</label>
+              <input id="eventDate" type="date" required />
+            </div>
+            <div class="admin-field">
+              <label for="eventTime">Time</label>
+              <input id="eventTime" type="time" />
+            </div>
+            <div class="admin-field">
+              <label for="eventDescription">Description</label>
+              <textarea id="eventDescription" rows="3"></textarea>
+            </div>
+            <button type="submit" class="find-tickets-btn">Create Event</button>
+          </form>
+        </div>
+
+        <div class="admin-right-column">
+          <div class="admin-card admin-events-card">
+            <h3>Existing Events</h3>
+            <div id="eventsList" class="admin-events"></div>
+          </div>
+
+          <div class="admin-card admin-promote-card">
+            <h3>Promote User</h3>
+            <form id="promoteForm">
+              <div class="admin-field">
+                <label for="promoteUsername">Username</label>
+                <input id="promoteUsername" type="text" placeholder="Enter username" required />
+              </div>
+              <button type="submit" class="find-tickets-btn small-btn">Promote to Admin</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="adminMessage" class="error" style="display:none;"></div>
     </section>
   </main>
 
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
+    async function requestJson(url, options = {}) {
+      const response = await fetch(url, options);
+      const payload = await response.json().catch(() => ({}));
+      return { ok: response.ok, status: response.status, payload };
+    }
+
+    function showMessage(text, type = 'error') {
+      const el = document.getElementById('adminMessage');
+      if (!el) return;
+      el.textContent = text;
+      el.className = type === 'success' ? 'success' : 'error';
+      el.style.display = 'block';
+      if (type === 'success') {
+        setTimeout(() => { el.style.display = 'none'; }, 4000);
+      }
+    }
+
+    async function fetchEvents() {
+      const response = await requestJson('/events');
+      if (!response.ok) {
+        showMessage('Could not load events.');
+        return [];
+      }
+
+      const list = document.getElementById('eventsList');
+      list.innerHTML = '';
+      const events = response.payload.events || [];
+      if (!events.length) {
+        list.innerHTML = '<p>No events found.</p>';
+        return events;
+      }
+
+      events.forEach((event) => {
+        const item = document.createElement('div');
+        item.className = 'admin-event-item';
+        item.innerHTML = `
+          <div>
+            <h4>${event.title}</h4>
+            <p>${event.location} · ${event.date}${event.time ? ` · ${event.time}` : ''}</p>
+            <p>${event.description || ''}</p>
+          </div>
+          <button class="find-tickets-btn delete-event-btn" data-id="${event.id}">Delete</button>
+        `;
+        list.appendChild(item);
+      });
+
+      document.querySelectorAll('.delete-event-btn').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const eventId = button.dataset.id;
+          const token = localStorage.getItem('stagepassJwtToken');
+          const deleteResp = await requestJson(`/events/${eventId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!deleteResp.ok) {
+            showMessage(deleteResp.payload.message || 'Failed to delete event.');
+            return;
+          }
+          showMessage('Event deleted.', 'success');
+          fetchEvents();
+        });
+      });
+
+      return events;
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('stagepassJwtToken');
       const userRaw = localStorage.getItem('stagepassUser');
       const user = userRaw ? JSON.parse(userRaw) : null;
@@ -46,9 +162,59 @@
         window.location.href = 'login.html';
       });
 
-      document.getElementById('viewEventsBtn').addEventListener('click', () => {
-        window.location.href = 'index.html';
+      document.getElementById('refreshEventsBtn').addEventListener('click', fetchEvents);
+
+      document.getElementById('createEventForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const title = document.getElementById('eventTitle').value.trim();
+        const location = document.getElementById('eventLocation').value.trim();
+        const date = document.getElementById('eventDate').value;
+        const time = document.getElementById('eventTime').value;
+        const description = document.getElementById('eventDescription').value.trim();
+
+        const response = await requestJson('/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ title, location, date, time, description })
+        });
+
+        if (!response.ok) {
+          showMessage(response.payload.message || 'Failed to create event.');
+          return;
+        }
+
+        showMessage('Event created successfully.', 'success');
+        document.getElementById('createEventForm').reset();
+        fetchEvents();
       });
+
+      document.getElementById('promoteForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const username = document.getElementById('promoteUsername').value.trim();
+        if (!username) return showMessage('Please enter a username.');
+
+        const response = await requestJson('/admin/promote', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ username })
+        });
+
+        if (!response.ok) {
+          showMessage(response.payload.message || 'Failed to promote user.');
+          return;
+        }
+
+        showMessage('User promoted to admin.', 'success');
+        document.getElementById('promoteForm').reset();
+      });
+
+      fetchEvents();
     });
   </script>
 </body>
