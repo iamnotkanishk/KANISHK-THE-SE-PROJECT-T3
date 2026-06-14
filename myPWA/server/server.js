@@ -74,9 +74,9 @@ db.serialize(() => { // Create users table if it doesn't exist
   db.get('SELECT COUNT(*) as count FROM events', (err, row) => {
     if (err || !row || row.count > 0) return; // Skip if error or events exist
     const sampleEvents = [
-      { title: 'Hamilton', location: 'Theater District', date: '2024-06-15', time: '19:00', description: 'An American Musical' },
-      { title: 'Phantom of the Opera', location: 'Broadway', date: '2024-06-20', time: '19:30', description: 'The longest-running show' },
-      { title: 'Les Miserables', location: 'Lincoln Center', date: '2024-06-25', time: '20:00', description: 'Historical epic musical' }
+      { title: 'School Opera', location: 'School Hall', date: '2024-06-15', time: '19:00', description: 'An American Musical' },
+      { title: 'Band Performance', location: 'School Hall', date: '2024-06-20', time: '19:30', description: 'The longest-running show' },
+      { title: 'Les Miserables', location: 'School Hall', date: '2024-06-25', time: '20:00', description: 'Historical epic musical' }
     ];
     const stmt = db.prepare('INSERT INTO events (title, location, date, time, description) VALUES (?, ?, ?, ?, ?)');
     sampleEvents.forEach(evt => {

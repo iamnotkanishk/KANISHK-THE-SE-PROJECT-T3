@@ -30,3 +30,27 @@
     at Database.<anonymous> (/workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/node_modules/sqlite3/lib/sqlite3.js:76:19)
     at Database.<anonymous> (/workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/node_modules/sqlite3/lib/sqlite3.js:20:19)
     at /workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/server/server.js:62:10
+[2026-06-14T08:49:34.556Z] Error: SQLITE_READONLY: attempt to write a readonly database
+--> in Statement#run([
+  'goodbye1',
+  '$2b$10$GuIkOF5FXHb6h7lt7QzAQ.MeP.PTfVWWojYZCnVLQX.cHMmPlHw/K'
+], [Function (anonymous)])
+    at Database.<anonymous> (/workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/node_modules/sqlite3/lib/sqlite3.js:76:19)
+    at Database.<anonymous> (/workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/node_modules/sqlite3/lib/sqlite3.js:20:19)
+    at /workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/server/server.js:165:10
+[2026-06-14T08:49:43.524Z] Error: SQLITE_READONLY: attempt to write a readonly database
+--> in Statement#run([
+  'goodbye1',
+  '$2b$10$NY4wmIFxcB4kCg2qD4lReOSmeRvOyV5YJ0uDbCcqbX5CBRq5w2cRO'
+], [Function (anonymous)])
+    at Database.<anonymous> (/workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/node_modules/sqlite3/lib/sqlite3.js:76:19)
+    at Database.<anonymous> (/workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/node_modules/sqlite3/lib/sqlite3.js:20:19)
+    at /workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/server/server.js:165:10
+[2026-06-14T08:49:44.339Z] Error: SQLITE_READONLY: attempt to write a readonly database
+--> in Statement#run([
+  'goodbye1',
+  '$2b$10$73082yVaSwBDIURzpxkN7eiWFihZhdwJTS0sNF6Eek8uqQ8qeU.K2'
+], [Function (anonymous)])
+    at Database.<anonymous> (/workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/node_modules/sqlite3/lib/sqlite3.js:76:19)
+    at Database.<anonymous> (/workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/node_modules/sqlite3/lib/sqlite3.js:20:19)
+    at /workspaces/SCHOOL-MUSICAL-BOOKING-SYSTEM-PWA/myPWA/server/server.js:165:10
