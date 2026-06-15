@@ -26,7 +26,7 @@
 
       <div class="seating-layout" style="margin-top:16px;">
         <aside class="booking-panel" style="width:600px; max-width:100%;">
-          <h3>Your Seats</h3>
+          <h3>Your Seats</h3> <!-- Added a section to display the booked seats and a button to download the ticket PDF -->
           <div class="booking-list">
             <ul id="bookedSeats"></ul>
           </div>
@@ -38,10 +38,10 @@
     </section>
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="js/checkout.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script> <!-- Added jsPDF library for generating PDF tickets -->
+  <script src="js/checkout.js"></script> 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => { // Add event listener to the back button to navigate back to the events page.
       const back = document.getElementById('backBtn');
       if (back) back.addEventListener('click', () => window.location.href='index.html');
     });

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Panel - StagePass</title>
+  <title>Admin Panel - StagePass</title> <!-- Updated title for admin panel -->
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -33,7 +33,7 @@
 
       <div class="admin-grid">
         <div class="admin-card admin-create-card">
-          <h3>Create Event</h3>
+          <h3>Create Event</h3> <!-- Added form for creating new events -->
           <form id="createEventForm">
             <div class="admin-field">
               <label for="eventTitle">Title</label>
@@ -61,12 +61,12 @@
 
         <div class="admin-right-column">
           <div class="admin-card admin-events-card">
-            <h3>Existing Events</h3>
+            <h3>Existing Events</h3> <!-- Added section to list existing events with delete option -->
             <div id="eventsList" class="admin-events"></div>
           </div>
 
           <div class="admin-card admin-promote-card">
-            <h3>Promote User</h3>
+            <h3>Promote User</h3> <!-- Added form to promote a user to admin role -->
             <form id="promoteForm">
               <div class="admin-field">
                 <label for="promoteUsername">Username</label>
@@ -86,10 +86,10 @@
     async function requestJson(url, options = {}) {
       const response = await fetch(url, options);
       const payload = await response.json().catch(() => ({}));
-      return { ok: response.ok, status: response.status, payload };
+      return { ok: response.ok, status: response.status, payload }; // Return both status and payload for better error handling
     }
 
-    function showMessage(text, type = 'error') {
+    function showMessage(text, type = 'error') { // Show message in the admin panel, with type 'error' or 'success'
       const el = document.getElementById('adminMessage');
       if (!el) return;
       el.textContent = text;
@@ -100,7 +100,7 @@
       }
     }
 
-    async function fetchEvents() {
+    async function fetchEvents() { // Fetch events from server and display them in the admin panel, with delete buttons for each event
       const response = await requestJson('/events');
       if (!response.ok) {
         showMessage('Could not load events.');
@@ -115,7 +115,7 @@
         return events;
       }
 
-      events.forEach((event) => {
+      events.forEach((event) => { // Create a div for each event with its details and a delete button
         const item = document.createElement('div');
         item.className = 'admin-event-item';
         item.innerHTML = `
@@ -129,7 +129,7 @@
         list.appendChild(item);
       });
 
-      document.querySelectorAll('.delete-event-btn').forEach((button) => {
+      document.querySelectorAll('.delete-event-btn').forEach((button) => { // Add click event listener to each delete button to send a DELETE request.
         button.addEventListener('click', async () => {
           const eventId = button.dataset.id;
           const token = localStorage.getItem('stagepassJwtToken');
@@ -149,7 +149,7 @@
       return events;
     }
 
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', async () => { // Check if user is logged in and has admin role, otherwise redirect to login page.
       const token = localStorage.getItem('stagepassJwtToken');
       const userRaw = localStorage.getItem('stagepassUser');
       const user = userRaw ? JSON.parse(userRaw) : null;
@@ -167,7 +167,7 @@
 
       document.getElementById('refreshEventsBtn').addEventListener('click', fetchEvents);
 
-      document.getElementById('createEventForm').addEventListener('submit', async (event) => {
+      document.getElementById('createEventForm').addEventListener('submit', async (event) => { // Handle form submission create POST request to create a new event. 
         event.preventDefault();
         const title = document.getElementById('eventTitle').value.trim();
         const location = document.getElementById('eventLocation').value.trim();
@@ -194,7 +194,7 @@
         fetchEvents();
       });
 
-      document.getElementById('promoteForm').addEventListener('submit', async (event) => {
+      document.getElementById('promoteForm').addEventListener('submit', async (event) => { // Handle form submission to promote a user to admin role by sending a POST request with the username.
         event.preventDefault();
         const username = document.getElementById('promoteUsername').value.trim();
         if (!username) return showMessage('Please enter a username.');
@@ -217,7 +217,7 @@
         document.getElementById('promoteForm').reset();
       });
 
-      fetchEvents();
+      fetchEvents(); // Initial fetch of events when admin panel loads.
     });
   </script>
 </body>

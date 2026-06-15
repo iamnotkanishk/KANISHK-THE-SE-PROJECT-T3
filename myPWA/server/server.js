@@ -88,7 +88,7 @@ db.serialize(() => { // Create users table if it doesn't exist
   });
 });
 
-function logError(err) {
+function logError(err) { // Helper function to log errors to a file with timestamps
   const logMessage = `[${new Date().toISOString()}] ${err?.stack || err?.message || String(err)}\n`;
   try {
     fs.appendFileSync(path.join(__dirname, 'server-error.log'), logMessage);
@@ -236,13 +236,13 @@ router.get('/admin/status', requireAuth, requireRole('admin'), (req, res) => { /
   return res.json({ message: 'Admin access granted.', user: req.user });
 });
 
-router.post('/events', requireAuth, requireRole('admin'), (req, res) => {
+router.post('/events', requireAuth, requireRole('admin'), (req, res) => { // Create a new event (admin only)
   const { title, location, date, time, description } = req.body || {};
   if (!title || !location || !date) {
     return res.status(400).json({ message: 'title, location, and date are required.' });
   }
 
-  db.run(
+  db.run( // Insert new event into database, associating it with the authenticated user who created it
     'INSERT INTO events (title, location, date, time, description, created_by) VALUES (?, ?, ?, ?, ?, ?)',
     [title, location, date, time || '', description || '', req.user.id],
     function (err) {
@@ -259,12 +259,12 @@ router.post('/events', requireAuth, requireRole('admin'), (req, res) => {
   );
 });
 
-router.delete('/events/:id', requireAuth, requireRole('admin'), (req, res) => {
+router.delete('/events/:id', requireAuth, requireRole('admin'), (req, res) => { // Delete an event by ID (admin only) and also delete associated bookings and seats
   const eventId = req.params.id;
   db.run('BEGIN TRANSACTION', (beginErr) => {
     if (beginErr) return sendServerError(res, beginErr);
 
-    db.run('DELETE FROM bookings WHERE event_id = ?', [eventId], (err1) => {
+    db.run('DELETE FROM bookings WHERE event_id = ?', [eventId], (err1) => { // First delete any bookings associated with the event to maintain referential integrity
       if (err1) {
         db.run('ROLLBACK');
         return sendServerError(res, err1);
@@ -300,14 +300,14 @@ router.delete('/events/:id', requireAuth, requireRole('admin'), (req, res) => {
   });
 });
 
-router.get('/users', requireAuth, requireRole('admin'), (req, res) => {
+router.get('/users', requireAuth, requireRole('admin'), (req, res) => { // Get a list of all users (admin only)
   db.all('SELECT id, username, role, created_at FROM users ORDER BY id ASC', (err, rows) => {
     if (err) return sendServerError(res, err);
     return res.json({ users: rows || [] });
   });
 });
 
-router.post('/admin/promote', requireAuth, requireRole('admin'), (req, res) => {
+router.post('/admin/promote', requireAuth, requireRole('admin'), (req, res) => { // Promote a user to admin role (admin only)
   const { username, user_id } = req.body || {};
   if (!username && !user_id) {
     return res.status(400).json({ message: 'username or user_id is required.' });

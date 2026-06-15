@@ -53,7 +53,7 @@ function showMessage(message, type = 'error') { // type can be 'error' or 'succe
     }
 }
 
-function clearMessages() {
+function clearMessages() { // Clear both error and success messages
     showMessage('', 'error');
     showMessage('', 'success');
 }
@@ -197,7 +197,7 @@ async function loadEventDetails() { // Load details for a specific event based o
     }
 
     try {
-        const response = await fetch(`/events/${encodeURIComponent(eventId)}`);
+        const response = await fetch(`/events/${encodeURIComponent(eventId)}`); // Fetch event details from server using event ID from query parameter
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(errorText || 'Failed to load event details.');
